@@ -40,7 +40,7 @@ sub readings_for {
 
         for my $word ($dict, $surface) {
             next if $seen{$word}++;
-            my $sth = $self->prepare("
+            my $sth = $self->anki->prepare("
                 select fields.value
                 from fields
                     join fieldModels on (fields.fieldModelId = fieldModels.id)
