@@ -4,6 +4,8 @@ use Any::Moose;
 use Text::MeCab;
 use Encode 'decode_utf8';
 
+# ABSTRACT: MeCab etc for my Anki::Corpus and Anki::Database
+
 has anki => (
     is      => 'ro',
     isa     => 'Anki::Database',
