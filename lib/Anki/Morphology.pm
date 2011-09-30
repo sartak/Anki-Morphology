@@ -4,6 +4,9 @@ use Any::Moose;
 use Text::MeCab;
 use Encode 'decode_utf8';
 
+use Anki::Database;
+use Anki::Corpus;
+
 # ABSTRACT: MeCab etc for my Anki::Corpus and Anki::Database
 
 has anki => (
