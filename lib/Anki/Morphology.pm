@@ -83,6 +83,7 @@ sub morphemes_of {
     my @morphemes;
 
     for (my $node = $self->mecab->parse($sentence); $node; $node = $node->next) {
+        # possibly the end of a sentence
         my $surface = decode_utf8($node->surface or last);
 
         my @fields = split ',', decode_utf8 $node->feature;
@@ -91,7 +92,8 @@ sub morphemes_of {
 
         my $dict = $fields[6];
 
-        last if $dict eq '*';
+        # not a Japanese word
+        next if $dict eq '*';
 
         push @morphemes, {
             surface    => $surface,
