@@ -91,6 +91,8 @@ sub morphemes_of {
 
         my $dict = $fields[6];
 
+        last if $dict eq '*';
+
         push @morphemes, {
             surface    => $surface,
             type       => $type,
