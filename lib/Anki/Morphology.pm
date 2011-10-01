@@ -83,7 +83,7 @@ sub morphemes_of {
     my @morphemes;
 
     for (my $node = $self->mecab->parse($sentence); $node; $node = $node->next) {
-        last if !defined($node->surface);
+        my $surface = decode_utf8($node->surface or last);
 
         my @fields = split ',', decode_utf8 $node->feature;
         my $type = $fields[0];
@@ -92,6 +92,8 @@ sub morphemes_of {
         my $dict = $fields[6];
 
         push @morphemes, {
+            surface    => $surface,
+            type       => $type,
             dictionary => $dict,
         };
     }
