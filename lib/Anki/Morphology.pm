@@ -78,7 +78,6 @@ sub readings_for {
 
 sub known_morphemes {
     my $self = shift;
-    my $warn = shift;
 
     my %i;
 
@@ -92,10 +91,7 @@ sub known_morphemes {
     ;");
     $sth->execute;
 
-    my ($i, $e) = (0, 0);
     while (my ($sentence) = $sth->fetchrow_array) {
-        say 2**$e++ if $warn && ++$i == 2**$e;
-
         for (my $node = $self->mecab->parse($sentence); $node; $node = $node->next) {
             my @fields = split ',', decode_utf8 $node->feature;
             my $dict = $fields[6];
