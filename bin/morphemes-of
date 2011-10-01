@@ -1,0 +1,17 @@
+#!/usr/bin/env perl
+use 5.14.0;
+use warnings;
+use utf8::all;
+use Anki::Morphology;
+
+my $sentence = shift
+    or die "usage: $0 sentence\n";
+
+my $morph = Anki::Morphology->new;
+
+for my $morpheme ($morph->morphemes_of($sentence)) {
+    for (sort keys %$morpheme) {
+        say "$_: $morpheme->{$_}";
+    }
+    say "";
+}
