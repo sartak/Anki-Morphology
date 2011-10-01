@@ -76,6 +76,24 @@ sub readings_for {
     return join "\n", map { "$_->[0]【$_->[1]】" } @readings;
 }
 
+sub morphemes_of {
+    my $self     = shift;
+    my $sentence = shift;
+
+    my @morphemes;
+
+    for (my $node = $self->mecab->parse($sentence); $node; $node = $node->next) {
+        my @fields = split ',', decode_utf8 $node->feature;
+        my $dict = $fields[6];
+
+        push @morphemes, {
+            dictionary => $dict,
+        };
+    }
+
+    return @morphemes;
+}
+
 sub known_morphemes {
     my $self = shift;
 
@@ -92,11 +110,8 @@ sub known_morphemes {
     $sth->execute;
 
     while (my ($sentence) = $sth->fetchrow_array) {
-        for (my $node = $self->mecab->parse($sentence); $node; $node = $node->next) {
-            my @fields = split ',', decode_utf8 $node->feature;
-            my $dict = $fields[6];
-
-            $i{$dict}++;
+        for my $morpheme ($self->morphemes_of($sentence)) {
+            $i{ $morpheme->{dictionary} }++;
         }
     }
 
