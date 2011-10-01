@@ -1,4 +1,5 @@
 package Anki::Morphology;
+use 5.14.0;
 use utf8::all;
 use Any::Moose;
 use Text::MeCab;
@@ -73,6 +74,37 @@ sub readings_for {
     }
     return @readings if wantarray;
     return join "\n", map { "$_->[0]【$_->[1]】" } @readings;
+}
+
+sub known_morphemes {
+    my $self = shift;
+    my $warn = shift;
+
+    my %i;
+
+    my $sth = $self->anki->prepare("
+        SELECT value FROM fields
+            JOIN fieldModels ON (fieldModels.id = fields.fieldModelId)
+            JOIN cards ON (cards.factId = fields.factId)
+        WHERE
+            fieldModels.name = '日本語'
+            AND cards.type > 0
+    ;");
+    $sth->execute;
+
+    my ($i, $e) = (0, 0);
+    while (my ($sentence) = $sth->fetchrow_array) {
+        say 2**$e++ if $warn && ++$i == 2**$e;
+
+        for (my $node = $self->mecab->parse($sentence); $node; $node = $node->next) {
+            my @fields = split ',', decode_utf8 $node->feature;
+            my $dict = $fields[6];
+
+            $i{$dict}++;
+        }
+    }
+
+    return \%i;
 }
 
 1;
