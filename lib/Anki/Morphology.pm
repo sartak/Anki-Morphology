@@ -83,6 +83,7 @@ sub morphemes_of {
     my @morphemes;
 
     for (my $node = $self->mecab->parse($sentence); $node; $node = $node->next) {
+        last if !defined($node->surface);
         my @fields = split ',', decode_utf8 $node->feature;
         my $dict = $fields[6];
 
