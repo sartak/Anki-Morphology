@@ -3,6 +3,10 @@ use 5.14.0;
 use utf8::all;
 use warnings;
 use Anki::Morphology;
+use DateTime;
+use Chart::Clicker;
+use Chart::Clicker::Axis::DateTime;
+use Chart::Clicker::Renderer::Area;
 
 my $morph = Anki::Morphology->new;
 my $anki = $morph->anki;
@@ -17,6 +21,7 @@ my $sth = $anki->prepare("
     WHERE
         fieldModels.name = '日本語'
         AND cards.type > 0
+        AND cards.firstAnswered > 0
     ORDER BY cards.firstAnswered ASC
 ");
 $sth->execute;
@@ -33,7 +38,76 @@ while (my ($sentence, $reviewed) = $sth->fetchrow_array) {
     }
 }
 
-for my $date (sort keys %new_for_date) {
-    say "$date|" . scalar(@{ $new_for_date{$date} }) . "|" . join '、', @{ $new_for_date{$date} };
+my $total = 0;
+my $end = DateTime->now;
+
+my $begin = (sort keys %new_for_date)[0];
+my ($y, $m, $d) = split '-', $begin;
+my $dt = DateTime->new(
+    year  => $y,
+    month => $m,
+    day   => $d,
+)->subtract(days => 1);
+
+my (@keys, @values);
+my @ticks;
+my $prev_label = '';
+
+until ($dt > $end) {
+    $dt->add(days => 1);
+    my $date = $dt->ymd;
+    my @new = @{ $new_for_date{$date} || [] };
+    my $new = @new;
+    $total += $new;
+
+    push @keys, $dt->epoch;
+    push @values, $total;
+
+    # note: don't substr month_name, J(une) and J(uly)
+    my $label = $dt->month_name . ' ' . substr($dt->year, 2, 2);
+    push @ticks, $dt->epoch
+        if $prev_label ne $label;
+    $prev_label = $label;
+
+#    say join '|',
+#        $date,
+#        $new,
+#        $total,
+#        (join '、', @new);
+
 }
+
+my $cc = Chart::Clicker->new();
+
+$cc->get_context('default')->renderer(Chart::Clicker::Renderer::Area->new);
+$cc->title->text('Japanese Words I Know');
+$cc->legend->visible(0);
+
+sub DateTime::month_letter { substr(shift->month_name, 0, 1) }
+
+$cc->get_context('default')->domain_axis(
+    Chart::Clicker::Axis::DateTime->new(
+        orientation      => 'horizontal',
+        position         => 'bottom',
+        tick_values      => \@ticks,
+        format           => '%{month_letter} %y',
+        tick_label_angle => 0.785398163,
+    ),
+);
+
+$cc->get_context('default')->range_axis->format('%d');
+$cc->get_context('default')->range_axis->label('Words');
+$cc->get_context('default')->range_axis->tick_values(
+    [ (grep { $_ % 1000 == 0 } 0 .. $total - 1), $total ],
+);
+
+my $series = Chart::Clicker::Data::Series->new(
+    keys   => \@keys,
+    values => \@values,
+);
+
+my $ds = Chart::Clicker::Data::DataSet->new(series => [ $series ]);
+$cc->add_to_datasets($ds);
+
+$cc->write_output('words.png');
 
