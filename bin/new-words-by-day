@@ -1,0 +1,39 @@
+#!/usr/bin/env perl
+use 5.14.0;
+use utf8::all;
+use warnings;
+use Anki::Morphology;
+
+my $morph = Anki::Morphology->new;
+my $anki = $morph->anki;
+my %i;
+my %new_for_date;
+
+my $sth = $anki->prepare("
+    SELECT sentence.value, cards.firstAnswered
+    FROM fields as sentence
+        JOIN fieldModels on (sentence.fieldModelId = fieldModels.id)
+        JOIN cards on (sentence.factId = cards.factId)
+    WHERE
+        fieldModels.name = '日本語'
+        AND cards.type > 0
+    ORDER BY cards.firstAnswered ASC
+");
+$sth->execute;
+
+while (my ($sentence, $reviewed) = $sth->fetchrow_array) {
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($reviewed);
+    $year += 1900;
+    $mon++;
+    my $date = sprintf '%04d-%02d-%02d', $year, $mon, $mday;
+
+    for my $morpheme ($morph->morphemes_of($sentence)) {
+        push @{ $new_for_date{$date} }, $morpheme->{dictionary}
+            if !$i{ $morpheme->{dictionary} }++;
+    }
+}
+
+for my $date (sort keys %new_for_date) {
+    say "$date|" . scalar(@{ $new_for_date{$date} }) . "|" . join '、', @{ $new_for_date{$date} };
+}
+
