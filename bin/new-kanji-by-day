@@ -1,0 +1,141 @@
+#!/usr/bin/env perl
+use 5.14.0;
+use utf8::all;
+use warnings;
+use Anki::Morphology;
+use DateTime;
+use Chart::Clicker;
+use Chart::Clicker::Axis::DateTime;
+use Chart::Clicker::Renderer::StackedArea;
+use Lingua::JP::Kanjidic;
+
+my $dic = Lingua::JP::Kanjidic->new("$ENV{HOME}/.kanjidic");
+
+my $morph = Anki::Morphology->new;
+my $anki = $morph->anki;
+my %i;
+my %new_for_date;
+
+my $sth = $anki->prepare("
+    SELECT kanji.value, cards.firstAnswered
+    FROM fields as kanji
+        JOIN fieldModels on (kanji.fieldModelId = fieldModels.id)
+        JOIN cards on (kanji.factId = cards.factId)
+        JOIN cardModels on (cards.cardModelId = cardModels.id)
+    WHERE
+        fieldModels.name = '漢字'
+        AND cardModels.name = '書け'
+        AND cards.firstAnswered > 0
+    ORDER BY cards.firstAnswered ASC
+");
+$sth->execute;
+
+my %all_series;
+
+my %series_name = (
+    1 => '1st Grade',
+    2 => '2nd Grade',
+    3 => '3rd Grade',
+    4 => '4th Grade',
+    5 => '5th Grade',
+    6 => '6th Grade',
+    7 => '7th Grade',
+    8 => '8th Grade',
+    9 => '9th Grade',
+    X => 'Extra',
+);
+
+while (my ($sentence, $reviewed) = $sth->fetchrow_array) {
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($reviewed);
+    $year += 1900;
+    $mon++;
+    my $date = sprintf '%04d-%02d-%02d', $year, $mon, $mday;
+
+    my $entry = $dic->lookup($sentence);
+    my $series = $entry ? $entry->grade || "X" : "X";
+    $all_series{$series}++;
+    push @{ $new_for_date{$date}{$series} }, $sentence;
+}
+
+my $end = DateTime->now;
+
+my $begin = (sort keys %new_for_date)[0];
+my ($y, $m, $d) = split '-', $begin;
+my $dt = DateTime->new(
+    year  => $y,
+    month => $m,
+    day   => 1,
+)->subtract(days => 1);
+
+my (@keys, %values);
+my @ticks;
+my $prev_label = '';
+my %total_for;
+my $total = 0;
+
+until ($dt > $end) {
+    $dt->add(days => 1);
+    my $date = $dt->ymd;
+
+    push @keys, $dt->epoch;
+
+    for my $series (sort keys %all_series) {
+        my @new = @{ $new_for_date{$date}{$series} || [] };
+        my $new = @new;
+        $total_for{$series} += $new;
+        $total += $new;
+        push @{ $values{$series} }, $total_for{$series};
+    }
+
+    # note: don't substr month_name, J(une) and J(uly)
+    my $label = $dt->month_name . ' ' . substr($dt->year, 2, 2);
+    push @ticks, $dt->epoch
+        if $prev_label ne $label;
+    $prev_label = $label;
+
+#    say join '|',
+#        $date,
+#        $new,
+#        $total,
+#        (join '、', @new);
+
+}
+
+my $cc = Chart::Clicker->new();
+
+$cc->get_context('default')->renderer(Chart::Clicker::Renderer::StackedArea->new);
+$cc->title->text('Kanji I Know');
+
+sub DateTime::month_letter { substr(shift->month_name, 0, 1) }
+
+$cc->get_context('default')->domain_axis(
+    Chart::Clicker::Axis::DateTime->new(
+        orientation      => 'horizontal',
+        position         => 'bottom',
+        tick_values      => \@ticks,
+        format           => '%{month_letter} %y',
+        tick_label_angle => 0.785398163,
+    ),
+);
+
+$cc->get_context('default')->range_axis->format('%d');
+$cc->get_context('default')->range_axis->label('Kanji');
+$cc->get_context('default')->range_axis->tick_values(
+    [ (grep { $_ % 500 == 0 } 0 .. $total - 1), $total ],
+);
+
+my @serieses;
+for my $series (sort keys %values) {
+    push @serieses, Chart::Clicker::Data::Series->new(
+        name   => $series_name{$series} || $series,
+        keys   => \@keys,
+        values => $values{$series},
+    );
+}
+
+my $ds = Chart::Clicker::Data::DataSet->new(series => \@serieses);
+$cc->add_to_datasets($ds);
+
+
+$cc->write_output('kanji.png');
+
