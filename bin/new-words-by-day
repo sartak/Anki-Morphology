@@ -46,7 +46,7 @@ my ($y, $m, $d) = split '-', $begin;
 my $dt = DateTime->new(
     year  => $y,
     month => $m,
-    day   => $d,
+    day   => 1,
 )->subtract(days => 1);
 
 my (@keys, @values);
