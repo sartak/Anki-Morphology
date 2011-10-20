@@ -121,6 +121,7 @@ sub known_morphemes {
     my $self = shift;
 
     my %i;
+    my @keep;
 
     my $sth = $self->anki->prepare("
         SELECT value FROM fields
@@ -134,11 +135,12 @@ sub known_morphemes {
 
     while (my ($sentence) = $sth->fetchrow_array) {
         for my $morpheme ($self->morphemes_of($sentence)) {
-            $i{ $morpheme->{dictionary} }++;
+            my $dict = $morpheme->{dictionary};
+            push @keep, $dict if $i{$dict}++ == 0;
         }
     }
 
-    return \%i;
+    return @keep;
 }
 
 1;
