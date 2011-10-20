@@ -20,7 +20,7 @@ has anki => (
 has corpus => (
     is      => 'ro',
     isa     => 'Anki::Corpus',
-    default => sub { Anki::Corpus->new },
+    default => sub { Anki::Corpus->new(morphology => shift) },
     lazy    => 1,
 );
 
