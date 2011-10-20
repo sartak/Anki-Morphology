@@ -130,6 +130,7 @@ sub known_morphemes {
         WHERE
             fieldModels.name = '日本語'
             AND cards.type > 0
+        ORDER BY cards.firstAnswered ASC
     ;");
     $sth->execute;
 
