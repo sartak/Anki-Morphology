@@ -1,0 +1,30 @@
+#!/usr/bin/env perl
+use 5.14.0;
+use warnings;
+use utf8::all;
+use Anki::Morphology;
+
+my $morph  = Anki::Morphology->new;
+my $anki   = $morph->anki;
+my $corpus = $morph->corpus;
+
+my %i = map { $_ => 1 } $morph->known_morphemes;
+say "You know " . keys(%i) . " words!";
+
+my %f = $morph->morpheme_frequency(1);
+
+my @unknown;
+
+while (<>) {
+    for my $morpheme ($morph->morphemes_of($_)) {
+        my $dict = $morpheme->{dictionary};
+        next if $i{ $dict };
+        push @unknown, $dict;
+    }
+}
+
+say "";
+
+for my $dict (sort { ($f{$b}) <=> ($f{$a}||0) } @unknown) {
+    say "$dict: $f{$dict}";
+}
