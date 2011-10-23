@@ -20,10 +20,11 @@ while (<>) {
     my $text = $_;
     my @unknown;
     my $cost = 0;
+    my %seen;
 
     for my $morpheme ($morph->morphemes_of($text)) {
         my $dict = $morpheme->{dictionary};
-        next if $i{ $dict };
+        next if $i{ $dict } || $seen{ $dict }++;
 
         $text =~ s/(\Q$morpheme->{surface}\E)/\e[1;35m$1\e[m/g;
         push @unknown, $dict;
