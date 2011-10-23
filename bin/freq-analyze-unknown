@@ -13,18 +13,32 @@ say "You know " . keys(%i) . " words!";
 
 my %f = $morph->morpheme_frequency(1);
 
-my @unknown;
+my @sentences;
 
 while (<>) {
-    for my $morpheme ($morph->morphemes_of($_)) {
+    chomp;
+    my $text = $_;
+    my @unknown;
+    my $cost = 0;
+
+    for my $morpheme ($morph->morphemes_of($text)) {
         my $dict = $morpheme->{dictionary};
         next if $i{ $dict };
+
+        $text =~ s/(\Q$morpheme->{surface}\E)/\e[1;35m$1\e[m/g;
         push @unknown, $dict;
+        $cost += 1 / ($f{$dict}||0.000001);
     }
+
+    push @sentences, [$cost, $text, @unknown];
 }
 
-say "";
-
-for my $dict (sort { ($f{$b}) <=> ($f{$a}||0) } @unknown) {
-    say "$dict: $f{$dict}";
+for my $sentence (sort { $a->[0] <=> $b->[0] } @sentences) {
+    say "";
+    my $cost = shift @$sentence;
+    my $text = shift @$sentence;
+    say $text;
+    for my $dict (sort { ($f{$b}) <=> ($f{$a}||0) } @$sentence) {
+        say "  $dict: $f{$dict}";
+    }
 }
