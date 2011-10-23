@@ -144,4 +144,24 @@ sub known_morphemes {
     return @keep;
 }
 
+sub morpheme_frequency {
+    my $self = shift;
+    my $noisy = 1;
+    my ($i, $e) = (0, 0);
+
+    my %f;
+
+    my $sth = $self->corpus->prepare("SELECT japanese FROM sentences;");
+    $sth->execute;
+
+    while (my ($sentence) = $sth->fetchrow_array) {
+        say 2**$e++ if $noisy && ++$i == 2**$e;
+        for my $morpheme ($self->morphemes_of($sentence)) {
+            $f{ $morpheme->{dictionary} }++;
+        }
+    }
+
+    return %f;
+}
+
 1;
