@@ -1,0 +1,8 @@
+CREATE TABLE morphemes (
+    rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+    dictionary TEXT UNIQUE NOT NULL,
+    source INTEGER NOT NULL,
+    added INTEGER NOT NULL
+);
+
+CREATE INDEX idx_morphemes_added ON morphemes (added);

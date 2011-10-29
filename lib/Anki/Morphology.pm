@@ -24,6 +24,18 @@ has corpus => (
     lazy    => 1,
 );
 
+has knowndb => (
+    is      => 'ro',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+
+        my $dbh = DBI->connect("dbi:SQLite:dbname=$ENV{HOME}/.knownmorph.sqlite");
+        $dbh->{sqlite_unicode} = 1;
+        $dbh
+    },
+);
+
 has mecab => (
     is      => 'ro',
     isa     => 'Text::MeCab',
@@ -117,7 +129,7 @@ sub morphemes_of {
     return @morphemes;
 }
 
-sub known_morphemes {
+sub known_morphemes_uncached {
     my $self = shift;
 
     my %i;
@@ -138,6 +150,55 @@ sub known_morphemes {
         for my $morpheme ($self->morphemes_of($sentence)) {
             my $dict = $morpheme->{dictionary};
             push @keep, $dict if $i{$dict}++ == 0;
+        }
+    }
+
+    return @keep;
+}
+
+sub known_morphemes {
+    my $self = shift;
+
+    my %i;
+    my @keep;
+
+    my $sth = $self->knowndb->prepare("
+        SELECT dictionary, added
+        FROM morphemes
+        ORDER BY added ASC;
+    ");
+    $sth->execute;
+
+    my $added;
+    while (((my $dict), $added) = $sth->fetchrow_array) {
+        push @keep, $dict if $i{$dict}++ == 0;
+    }
+
+    $added ||= 0; # first run
+
+    $sth = $self->anki->prepare("
+        SELECT value, cards.firstAnswered, cards.factId FROM fields
+            JOIN fieldModels ON (fieldModels.id = fields.fieldModelId)
+            JOIN cards ON (cards.factId = fields.factId)
+        WHERE
+            fieldModels.name = '日本語'
+            AND cards.type > 0
+            AND cards.firstAnswered > ?
+        ORDER BY cards.firstAnswered ASC
+    ;");
+    $sth->execute($added);
+
+    while (my ($sentence, $added, $fid) = $sth->fetchrow_array) {
+        for my $morpheme ($self->morphemes_of($sentence)) {
+            my $dict = $morpheme->{dictionary};
+            next if $i{$dict}++;
+
+            push @keep, $dict;
+            $self->knowndb->do("
+                INSERT INTO morphemes
+                ('dictionary', 'added', 'source')
+                VALUES (?, ?, ?)
+            ", {}, $dict, $added, $fid);
         }
     }
 
