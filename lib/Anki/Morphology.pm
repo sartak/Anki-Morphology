@@ -270,14 +270,12 @@ sub morpheme_frequency {
 
     my %f;
 
-    my $sth = $self->corpus->prepare("SELECT japanese FROM sentences;");
+    my $sth = $self->corpus->prepare("SELECT morphemes FROM sentences;");
     $sth->execute;
 
-    while (my ($sentence) = $sth->fetchrow_array) {
+    while (my ($morphemes) = $sth->fetchrow_array) {
         say 2**$e++ if $noisy && ++$i == 2**$e;
-        for my $morpheme ($self->morphemes_of($sentence)) {
-            $f{ $morpheme->{dictionary} }++;
-        }
+        $f{ $_ }++ for split ' ', $morphemes;
     }
 
     return %f;
