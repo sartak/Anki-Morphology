@@ -5,4 +5,4 @@ CREATE TABLE morphemes (
     added INTEGER NOT NULL
 );
 
-CREATE INDEX idx_morphemes_added ON morphemes (added);
+CREATE INDEX idx_morphemes_added ON morphemes (added ASC);
