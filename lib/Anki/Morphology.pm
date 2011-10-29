@@ -156,8 +156,42 @@ sub known_morphemes_uncached {
     return @keep;
 }
 
+sub fast_known_morphemes {
+    my $self = shift;
+
+    my $sth = $self->knowndb->prepare("
+        SELECT dictionary
+        FROM morphemes
+        ORDER BY added ASC
+    ;");
+    $sth->execute;
+
+    my @keep;
+    while (my ($dict) = $sth->fetchrow_array) {
+        push @keep, $dict;
+    }
+    return @keep;
+}
+
 sub known_morphemes {
     my $self = shift;
+
+    my $last_update = ($self->knowndb->selectrow_array("
+        SELECT value
+        FROM vars
+        WHERE key = 'last_update';
+    ;"))[0] || 0;
+
+    my $last_new = int(($self->anki->dbh->selectrow_array("
+        SELECT cards.firstAnswered
+        FROM cards
+        WHERE cards.type > 0
+        ORDER BY cards.firstAnswered DESC
+        LIMIT 1
+    ;"))[0]);
+
+    return $self->fast_known_morphemes
+        if $last_new <= $last_update;
 
     my %i;
     my @keep;
@@ -165,8 +199,8 @@ sub known_morphemes {
     my $sth = $self->knowndb->prepare("
         SELECT dictionary, added
         FROM morphemes
-        ORDER BY added ASC;
-    ");
+        ORDER BY added ASC
+    ;");
     $sth->execute;
 
     my $added;
@@ -201,6 +235,16 @@ sub known_morphemes {
             ", {}, $dict, $added, $fid);
         }
     }
+
+    $self->knowndb->begin_work;
+    $self->knowndb->do("
+        DELETE FROM vars
+        WHERE key = 'last_update'
+    ;");
+    $self->knowndb->do("
+        INSERT INTO vars (key, value) VALUES ('last_update', $last_new);
+    ;");
+    $self->knowndb->commit;
 
     return @keep;
 }

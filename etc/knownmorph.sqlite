@@ -5,4 +5,9 @@ CREATE TABLE morphemes (
     added INTEGER NOT NULL
 );
 
+CREATE TABLE vars (
+    key TEXT UNIQUE NOT NULL,
+    value TEXT
+);
+
 CREATE INDEX idx_morphemes_added ON morphemes (added ASC);
