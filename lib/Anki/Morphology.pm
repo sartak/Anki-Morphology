@@ -193,6 +193,8 @@ sub known_morphemes {
     return $self->fast_known_morphemes
         if $last_new <= $last_update;
 
+    warn "New cards, rescanning morphology...\n";
+
     my %i;
     my @keep;
 
@@ -222,18 +224,30 @@ sub known_morphemes {
     ;");
     $sth->execute($added);
 
+    my @new;
+
     while (my ($sentence, $added, $fid) = $sth->fetchrow_array) {
         for my $morpheme ($self->morphemes_of($sentence)) {
             my $dict = $morpheme->{dictionary};
             next if $i{$dict}++;
 
             push @keep, $dict;
+            push @new, $dict;
+
             $self->knowndb->do("
                 INSERT INTO morphemes
                 ('dictionary', 'added', 'source')
                 VALUES (?, ?, ?)
             ", {}, $dict, $added, $fid);
         }
+    }
+
+    if (@new < 10) {
+        warn "New morphemes: " . join('、', @new) . "\n";
+    }
+    else {
+        my $more = () = splice @new, 10;
+        warn "New morphemes: " . join('、', @new) . ", and $more others...\n";
     }
 
     $self->knowndb->begin_work;
