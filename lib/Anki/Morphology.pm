@@ -242,7 +242,7 @@ sub known_morphemes {
         }
     }
 
-    if (@new >= 10) {
+    if (@new > 10) {
         my $more = () = splice @new, 10;
         warn "New morphemes: " . join('、', @new) . ", and $more others...\n";
     }
