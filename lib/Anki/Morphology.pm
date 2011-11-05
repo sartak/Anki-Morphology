@@ -242,12 +242,12 @@ sub known_morphemes {
         }
     }
 
-    if (@new < 10) {
-        warn "New morphemes: " . join('、', @new) . "\n";
-    }
-    else {
+    if (@new >= 10) {
         my $more = () = splice @new, 10;
         warn "New morphemes: " . join('、', @new) . ", and $more others...\n";
+    }
+    elsif (@new > 0) {
+        warn "New morphemes: " . join('、', @new) . "\n";
     }
 
     $self->knowndb->begin_work;
