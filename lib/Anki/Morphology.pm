@@ -281,4 +281,24 @@ sub morpheme_frequency {
     return %f;
 }
 
+sub common_words_for {
+    my $self   = shift;
+    my $substr = shift;
+
+    my $sth = $self->corpus->prepare("SELECT morphemes FROM sentences WHERE morphemes LIKE ?");
+    $sth->execute("%$substr%");
+
+    my $qr = qr/\Q$substr\E/;
+
+    my %words;
+    while (my ($morphemes) = $sth->fetchrow_array) {
+        for my $morpheme (split ' ', $morphemes) {
+            $words{$morpheme}++
+                if $morpheme =~ $qr;
+        }
+    }
+
+    return \%words;
+}
+
 1;

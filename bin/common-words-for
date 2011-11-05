@@ -1,0 +1,25 @@
+#!/usr/bin/env perl
+use 5.14.0;
+use warnings;
+use utf8::all;
+use Anki::Morphology;
+
+my $substr = shift
+    or die "usage: $0 substr\n";
+
+my $morph = Anki::Morphology->new;
+
+my %i     = map { $_ => 1 } $morph->known_morphemes;
+my %words = %{ $morph->common_words_for($substr) };
+
+for my $word (sort { $words{$b} <=> $words{$a} } keys %words) {
+    if ($i{ $word }) {
+        print "\e[32m$word\e[m";
+    }
+    else {
+        print "\e[31m$word\e[m";
+    }
+
+    say ": $words{$word}";
+}
+
