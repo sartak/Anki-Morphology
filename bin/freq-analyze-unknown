@@ -39,7 +39,7 @@ for my $sentence (sort { $a->[0] <=> $b->[0] } @sentences) {
     my $cost = shift @$sentence;
     my $text = shift @$sentence;
     say $text;
-    for my $dict (sort { ($f{$b}) <=> ($f{$a}||0) } @$sentence) {
-        say "  $dict: $f{$dict}";
+    for my $dict (sort { ($f{$b}||0) <=> ($f{$a}||0) } @$sentence) {
+        say "  $dict: " . ($f{$dict}||0);
     }
 }
