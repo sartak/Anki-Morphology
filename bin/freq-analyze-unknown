@@ -11,6 +11,7 @@ my $corpus = $morph->corpus;
 my %i = map { $_ => 1 } $morph->known_morphemes;
 say "You know " . keys(%i) . " words!";
 
+my %new_words;
 my %f = $morph->morpheme_frequency(1);
 
 my @sentences;
@@ -26,6 +27,8 @@ while (<>) {
         my $dict = $morpheme->{dictionary};
         next if $i{ $dict } || $seen{ $dict }++;
 
+        $new_words{$dict}++;
+
         $text =~ s/(\Q$morpheme->{surface}\E)/\e[1;35m$1\e[m/g;
         push @unknown, $dict;
         $cost += 1 / ($f{$dict}||0.000001);
@@ -35,11 +38,13 @@ while (<>) {
 }
 
 for my $sentence (sort { $a->[0] <=> $b->[0] } @sentences) {
-    say "";
     my $cost = shift @$sentence;
     my $text = shift @$sentence;
     say $text;
     for my $dict (sort { ($f{$b}||0) <=> ($f{$a}||0) } @$sentence) {
         say "  $dict: " . ($f{$dict}||0);
     }
+    say "";
 }
+
+say "New words: " . scalar(keys %new_words);
