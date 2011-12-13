@@ -15,10 +15,13 @@ my %new_words;
 my %f = $morph->morpheme_frequency(1);
 
 my @sentences;
+my %seen_sentence;
 
 while (<>) {
     chomp;
     my $text = $_;
+    next if $seen_sentence{$text}++;
+
     my @unknown;
     my $cost = 0;
     my %seen;
