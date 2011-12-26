@@ -16,6 +16,7 @@ my %f = $morph->morpheme_frequency(1);
 
 my @sentences;
 my %seen_sentence;
+my %word_score;
 
 while (<>) {
     chomp;
@@ -35,6 +36,7 @@ while (<>) {
         $text =~ s/(\Q$morpheme->{surface}\E)/\e[1;35m$1\e[m/g;
         push @unknown, $dict;
         $cost += 1 / ($f{$dict}||0.000001);
+        $word_score{$dict} += $f{$dict};
     }
 
     push @sentences, [$cost, $text, @unknown];
@@ -50,4 +52,4 @@ for my $sentence (sort { $a->[0] <=> $b->[0] } @sentences) {
     say "";
 }
 
-say "New words: " . scalar(keys %new_words);
+say "Word order (".scalar(keys %new_words)."): " . join '、', map { "$_($word_score{$_})" } sort { $word_score{$b} <=> $word_score{$a} } keys %word_score;
