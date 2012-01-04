@@ -17,6 +17,7 @@ my %f = $morph->morpheme_frequency(1);
 my @sentences;
 my %seen_sentence;
 my %word_score;
+my %word_count;
 
 while (<>) {
     chomp;
@@ -52,4 +53,4 @@ for my $sentence (sort { $a->[0] <=> $b->[0] } @sentences) {
     say "";
 }
 
-say "Word order (".scalar(keys %new_words)."): " . join '、', map { "$_($word_score{$_})" } sort { $word_score{$b} <=> $word_score{$a} } keys %word_score;
+say "Word order (".scalar(keys %new_words)."): " . join '、', map { "$_($word_score{$_}/$new_words{$_})" } sort { $word_score{$b} <=> $word_score{$a} } keys %word_score;
