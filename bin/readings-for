@@ -1,0 +1,12 @@
+#!/usr/bin/env perl
+use 5.14.0;
+use warnings;
+use utf8::all;
+use Anki::Morphology;
+
+my $sentence = scalar <>;
+
+my $morph = Anki::Morphology->new;
+
+say scalar $morph->readings_for($sentence);
+
