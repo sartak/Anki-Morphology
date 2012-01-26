@@ -4,7 +4,8 @@ use warnings;
 use utf8::all;
 use Anki::Morphology;
 
-my $sentence = scalar <>;
+my $sentence = shift
+    or die "usage: $0 'sentence'\n";
 
 my $morph = Anki::Morphology->new;
 
