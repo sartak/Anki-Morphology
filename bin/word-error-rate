@@ -1,0 +1,51 @@
+#!/usr/bin/env perl
+use 5.14.0;
+use warnings;
+use utf8::all;
+use Anki::Morphology;
+
+my $morph  = Anki::Morphology->new;
+my $anki   = $morph->anki;
+
+my $sth = $anki->prepare("
+    SELECT japanese.value, cards.yesCount, cards.noCount
+        FROM fields AS japanese
+        JOIN cards ON (japanese.factId = cards.factId)
+        JOIN fieldModels ON (japanese.fieldModelId = fieldModels.id)
+        JOIN models on (fieldModels.modelId = models.id)
+    WHERE
+        fieldModels.name = '日本語'
+        AND models.name = '文'
+        AND cards.yesCount > 0
+;");
+$sth->execute;
+
+my %right_for;
+my %wrong_for;
+my %cards_for;
+
+while (my ($japanese, $right, $wrong) = $sth->fetchrow_array) {
+    for my $morpheme ($morph->morphemes_of($japanese)) {
+        my $word = $morpheme->{dictionary};
+        $right_for{$word} += $right;
+        $wrong_for{$word} += $wrong;
+        $cards_for{$word}++;
+    }
+}
+
+my %right_for_card_count;
+my %wrong_for_card_count;
+my $max = 0;
+
+for my $word (keys %cards_for) {
+    my $count = $cards_for{ $word };
+    $max = $count if $count > $max;
+
+    $right_for_card_count{$count} += $right_for{$word};
+    $wrong_for_card_count{$count} += $wrong_for{$word};
+}
+
+for my $count (1 .. $max) {
+    next if !$right_for_card_count{$count};
+    say "$count: " . ($right_for_card_count{$count} / ($right_for_card_count{$count} + $wrong_for_card_count{$count}));
+}
