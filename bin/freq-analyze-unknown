@@ -37,7 +37,7 @@ while (<>) {
         $text =~ s/(\Q$morpheme->{surface}\E)/\e[1;35m$1\e[m/g;
         push @unknown, $dict;
         $cost += 1 / ($f{$dict}||0.000001);
-        $word_score{$dict} += $f{$dict};
+        $word_score{$dict} += $f{$dict} || 0;
     }
 
     push @sentences, [$cost, $text, @unknown];
