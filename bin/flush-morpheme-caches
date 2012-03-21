@@ -1,0 +1,43 @@
+#!/usr/bin/env perl
+use 5.14.0;
+use warnings;
+use utf8::all;
+use Anki::Morphology;
+
+my $morph   = Anki::Morphology->new;
+my $corpus  = $morph->corpus;
+my $knowndb = $morph->knowndb;
+
+my %i = map { $_ => 1 } $morph->fast_known_morphemes;
+
+say "You KNEW " . keys(%i) . " words!";
+
+$knowndb->begin_work;
+    $knowndb->do("DELETE FROM morphemes;");
+    $knowndb->do("DELETE FROM vars WHERE key = 'last_update';");
+$knowndb->commit;
+
+my %j = map { $_ => 1 } $morph->known_morphemes;
+
+say "You KNOW " . keys(%j) . " words!";
+
+$corpus->do("DELETE FROM morphemes;");
+$corpus->do("UPDATE sentences SET morphemes=NULL;");
+
+say "Clearing corpus...";
+my ($i, $e) = (0, 0);
+
+$corpus->each_sentence(';', sub {
+    say 2**$e++ if ++$i == 2**$e;
+
+    my $sentence = shift;
+
+    my $japanese = $sentence->japanese;
+
+    my @morphemes = $morph->morphemes_of($japanese);
+
+    my $morpheme_string = $corpus->morpheme_string_for($japanese, \@morphemes);
+    $corpus->dbh->do("update sentences set morphemes=? where rowid=?", {}, $morpheme_string, $sentence->rowid);
+
+    $sentence->insert_standalone_morphemes(\@morphemes);
+});
