@@ -21,23 +21,30 @@ my %j = map { $_ => 1 } $morph->known_morphemes;
 
 say "You KNOW " . keys(%j) . " words!";
 
-$corpus->do("DELETE FROM morphemes;");
-$corpus->do("UPDATE sentences SET morphemes=NULL;");
-
 say "Clearing corpus...";
 my ($i, $e) = (0, 0);
 
-$corpus->each_sentence(';', sub {
+my $morpheme_sth = $corpus->prepare("select morphemes from sentences where rowid=?");
+
+$corpus->each_sentence('order by rowid asc;', sub {
     say 2**$e++ if ++$i == 2**$e;
 
     my $sentence = shift;
 
     my $japanese = $sentence->japanese;
 
-    my @morphemes = $morph->morphemes_of($japanese);
+    my @new_morphemes = $morph->morphemes_of($japanese);
+    my $new_morpheme_string = $corpus->morpheme_string_for($japanese, \@new_morphemes);
 
-    my $morpheme_string = $corpus->morpheme_string_for($japanese, \@morphemes);
-    $corpus->dbh->do("update sentences set morphemes=? where rowid=?", {}, $morpheme_string, $sentence->rowid);
+    $morpheme_sth->execute($sentence->rowid);
+    my ($old_morpheme_string) = $morpheme_sth->fetchrow_array;
 
-    $sentence->insert_standalone_morphemes(\@morphemes);
+    return if $old_morpheme_string eq $new_morpheme_string;
+
+    say "$old_morpheme_string -> $new_morpheme_string";
+
+    $corpus->dbh->do("update sentences set morphemes=? where rowid=?", {}, $new_morpheme_string, $sentence->rowid);
+    $sentence->refresh;
+    $corpus->dbh->do("delete from morphemes where sentence=?", {}, $sentence->rowid);
+    $sentence->insert_standalone_morphemes(\@new_morphemes);
 });
