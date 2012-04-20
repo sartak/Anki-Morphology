@@ -60,7 +60,7 @@ sub readings_for {
         my @fields = split ',', decode_utf8 $node->feature;
         my $surface = decode_utf8 $node->surface;
         my $dict = $fields[6];
-        next unless $dict =~ /\p{Han}/;
+        next unless ($dict||'') =~ /\p{Han}/ || ($surface||'') =~ /\p{Han}/;
 
         for my $word ($dict, $surface) {
             next if $seen{$word}++;
