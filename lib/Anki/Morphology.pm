@@ -83,11 +83,11 @@ sub readings_for {
                         )
                         limit 1;
                 ");
-                $sth->execute("$word【%", "%\n$word【%", "%<br>$word【%");
+                $sth->execute("$word【%", "%\n$word【%", "%>$word【%");
                 my ($readings) = $sth->fetchrow_array;
                 next unless $readings;
 
-                my ($reading) = $readings =~ /(?:<br>|\n|^)\Q$word\E【(.*?)】/;
+                my ($reading) = $readings =~ /(?:>|\n|^)\Q$word\E【(.*?)】/;
                 $self->readings->{$word} = $reading;
             }
 
