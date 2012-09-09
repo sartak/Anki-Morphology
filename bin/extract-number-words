@@ -46,5 +46,5 @@ for my $word (sort keys %reading_for) {
     next if $word =~ /,/; # confuses mecab
     my $reading = $reading_for{$word};
     my $katakana = kana2katakana($reading);
-    say "$word,-1,-1,1,名詞,一般,*,*,*,*,$reading,$katakana,$katakana,$reading";
+    say "$word,-1,-1,1,名詞,一般,*,*,*,*,$word,$katakana,$katakana,$reading";
 }
