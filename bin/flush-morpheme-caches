@@ -27,7 +27,7 @@ my ($i, $e) = (0, 0);
 my $morpheme_sth = $corpus->prepare("select morphemes from sentences where rowid=?");
 
 $corpus->each_sentence('order by rowid asc;', sub {
-    say 2**$e++ if ++$i == 2**$e;
+    warn((2**$e++)."\n") if ++$i == 2**$e;
 
     my $sentence = shift;
 
