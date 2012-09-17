@@ -8,7 +8,7 @@ How to rebuild a custom mecab database:
 
     2. Refresh etc/dict.csv
 
-        ./bin/extract-number-words > etc/dict.csv
+        extract-number-words > etc/dict.csv
         mecab-additions >> etc/dict.csv
 
     3. Generate a new userdic
@@ -17,5 +17,5 @@ How to rebuild a custom mecab database:
 
     4. Regenerate all morpheme caches (takes a LONG time)
 
-        ./bin/flush-morpheme-caches
+        flush-morpheme-caches
 
