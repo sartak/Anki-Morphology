@@ -136,18 +136,7 @@ sub known_morphemes_uncached {
     my %i;
     my @keep;
 
-    my $sth = $self->anki->prepare("
-        SELECT value FROM fields
-            JOIN fieldModels ON (fieldModels.id = fields.fieldModelId)
-            JOIN cards ON (cards.factId = fields.factId)
-        WHERE
-            fieldModels.name = '日本語'
-            AND cards.type > 0
-        ORDER BY cards.firstAnswered ASC
-    ;");
-    $sth->execute;
-
-    while (my ($sentence) = $sth->fetchrow_array) {
+    for my $sentence ($self->anki->field_values("日本語", "文")) {
         for my $morpheme ($self->morphemes_of($sentence)) {
             my $dict = $morpheme->{dictionary};
             push @keep, $dict if $i{$dict}++ == 0;
