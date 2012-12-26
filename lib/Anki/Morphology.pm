@@ -172,13 +172,7 @@ sub known_morphemes {
         WHERE key = 'last_update';
     ;"))[0] || 0;
 
-    my $last_new = int(($self->anki->dbh->selectrow_array("
-        SELECT cards.firstAnswered
-        FROM cards
-        WHERE cards.type > 0
-        ORDER BY cards.firstAnswered DESC
-        LIMIT 1
-    ;"))[0]);
+    my $last_new = $self->anki->last_new;
 
     return $self->fast_known_morphemes
         if $last_new <= $last_update;
