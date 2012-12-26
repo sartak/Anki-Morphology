@@ -77,8 +77,10 @@ sub readings_for {
                 }
             }
 
-            push @readings, [$word, $self->readings->{$word}];
-            last;
+            if ($self->readings->{$word}) {
+                push @readings, [$word, $self->readings->{$word}];
+                last;
+            }
         }
     }
 
