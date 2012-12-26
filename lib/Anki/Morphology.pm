@@ -123,6 +123,7 @@ sub morphemes_of {
             surface    => $surface,
             type       => $type,
             dictionary => $dict,
+            reading    => $fields[8],
         };
     }
 
