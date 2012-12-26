@@ -158,7 +158,7 @@ sub known_morphemes {
         WHERE key = 'last_update';
     ;"))[0] || 0;
 
-    my $last_new = $self->anki->last_new;
+    my $last_new = int($self->anki->last_new_card / 1000);
 
     return $self->fast_known_morphemes
         if $last_new <= $last_update;
@@ -182,21 +182,14 @@ sub known_morphemes {
 
     $added ||= 0; # first run
 
-    $sth = $self->anki->prepare("
-        SELECT value, cards.firstAnswered, cards.factId FROM fields
-            JOIN fieldModels ON (fieldModels.id = fields.fieldModelId)
-            JOIN cards ON (cards.factId = fields.factId)
-        WHERE
-            fieldModels.name = '日本語'
-            AND cards.type > 0
-            AND cards.firstAnswered > ?
-        ORDER BY cards.firstAnswered ASC
-    ;");
-    $sth->execute($added);
-
     my @new;
+    $self->anki->each_card(sub {
+        my ($card) = @_;
 
-    while (my ($sentence, $added, $fid) = $sth->fetchrow_array) {
+        return if $card->suspended;
+        my $sentence = $card->field('日本語');
+        return if !$sentence;
+
         for my $morpheme ($self->morphemes_of($sentence)) {
             my $dict = $morpheme->{dictionary};
             next if $i{$dict}++;
@@ -204,13 +197,15 @@ sub known_morphemes {
             push @keep, $dict;
             push @new, $dict;
 
+            my $added = int($card->id / 1000);
+
             $self->knowndb->do("
                 INSERT INTO morphemes
                 ('dictionary', 'added', 'source')
                 VALUES (?, ?, ?)
-            ", {}, $dict, $added, $fid);
+            ", {}, $dict, $added, $card->note_id);
         }
-    }
+    });
 
     if (@new > 10) {
         my $more = () = splice @new, 10;
