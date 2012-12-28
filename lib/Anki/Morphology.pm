@@ -188,7 +188,6 @@ sub known_morphemes {
     $self->anki->each_card(sub {
         my ($card) = @_;
 
-        return if $card->suspended;
         my $sentence = $card->field('日本語');
         return if !$sentence;
 
