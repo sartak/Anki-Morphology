@@ -14,33 +14,25 @@ my @number_chars = (
     qw/一 二 三 四 五 六 七 八 九 十 百 千 万/,
 );
 
-my $subquery = join " or ", map { "fields.value like '%$_%'" } @number_chars;
-
 my $re = join '|', @number_chars;
 $re = qr/$re/;
 
-my $sth = $anki->prepare("
-    select fields.value
-    from fields
-        join fieldModels on (fields.fieldModelId = fieldModels.id)
-        join models on (fieldModels.modelId = models.id)
-        join cards on (cards.factId = fields.factId)
-    where
-        models.name is '文'
-        and fieldModels.name like '%読み%'
-        and cards.type > 0
-        and ( $subquery );
-");
-$sth->execute;
-
 my %reading_for;
 
-while (my ($readings) = $sth->fetchrow_array) {
-    $readings =~ s/<br.*?>/\n/g;
+$anki->each_card(sub {
+    my ($card) = @_;
+    return unless $card->model->name eq '文';
+    return if $card->suspended;
+
+    my $readings = $card->field('読み');
+    $readings =~ s/<.*?>/\n/g;
     while ($readings =~ /^([^【】]*(?:$re)[^【】]*)【(.*?)】$/mg) {
-        $reading_for{$1} = $2;
+        my ($word, $reading) = ($1, $2);
+        $word =~ s/^\s+//;
+        $word =~ s/\s+$//;
+        $reading_for{$word} = $reading;
     }
-}
+});
 
 for my $word (sort keys %reading_for) {
     next if $word =~ /,/; # confuses mecab
