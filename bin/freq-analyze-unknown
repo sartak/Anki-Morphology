@@ -11,6 +11,14 @@ my $corpus = $morph->corpus;
 my %i = map { $_ => 1 } $morph->known_morphemes;
 say "You know " . keys(%i) . " words!";
 
+my %has_sentence;
+$anki->each_card(sub {
+    my ($card) = @_;
+    my $sentence = $card->field('日本語');
+    return if !$sentence;
+    $has_sentence{$sentence} = 1;
+});
+
 my %new_words;
 my %f = $morph->morpheme_frequency(1);
 
@@ -23,6 +31,11 @@ while (<>) {
     chomp;
     my $text = $_;
     next if $seen_sentence{$text}++;
+
+    if ($has_sentence{$text}) {
+        say "✗ $text";
+        next;
+    }
 
     my @unknown;
     my $cost = 0;

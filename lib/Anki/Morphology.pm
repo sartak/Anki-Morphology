@@ -55,6 +55,7 @@ sub readings_for {
 
     my @readings;
     my %seen;
+    my $yomi;
 
     NODE: for (my $node = $self->mecab->parse($sentence); $node; $node = $node->next) {
         my @fields = split ',', decode_utf8 $node->feature;
@@ -66,33 +67,20 @@ sub readings_for {
             next if $seen{$word}++;
 
             if (!$self->readings->{$word}) {
-                my $sth = $self->anki->prepare("
-                    select fields.value
-                    from fields
-                        join fieldModels on (fields.fieldModelId = fieldModels.id)
-                        join models on (fieldModels.modelId = models.id)
-                        join cards on (cards.factId = fields.factId)
-                    where
-                        models.name is '文'
-                        and fieldModels.name like '%読み%'
-                        and cards.type > 0
-                        and (
-                            fields.value like ?
-                            or fields.value like ?
-                            or fields.value like ?
-                        )
-                        limit 1;
-                ");
-                $sth->execute("$word【%", "%\n$word【%", "%>$word【%");
-                my ($readings) = $sth->fetchrow_array;
-                next unless $readings;
-
-                my ($reading) = $readings =~ /(?:>|\n|^)\Q$word\E【(.*?)】/;
-                $self->readings->{$word} = $reading;
+                $yomi //= [ $self->anki->field_values("読み", "文") ];
+                for my $readings (@$yomi) {
+                    my ($reading) = $readings =~ /(?:>|\n|^)\Q$word\E【(.*?)】/;
+                    if ($reading) {
+                        $self->readings->{$word} = $reading;
+                        last;
+                    }
+                }
             }
 
-            push @readings, [$word, $self->readings->{$word}];
-            last;
+            if ($self->readings->{$word}) {
+                push @readings, [$word, $self->readings->{$word}];
+                last;
+            }
         }
     }
 
@@ -136,18 +124,7 @@ sub known_morphemes_uncached {
     my %i;
     my @keep;
 
-    my $sth = $self->anki->prepare("
-        SELECT value FROM fields
-            JOIN fieldModels ON (fieldModels.id = fields.fieldModelId)
-            JOIN cards ON (cards.factId = fields.factId)
-        WHERE
-            fieldModels.name = '日本語'
-            AND cards.type > 0
-        ORDER BY cards.firstAnswered ASC
-    ;");
-    $sth->execute;
-
-    while (my ($sentence) = $sth->fetchrow_array) {
+    for my $sentence ($self->anki->field_values("日本語", "文")) {
         for my $morpheme ($self->morphemes_of($sentence)) {
             my $dict = $morpheme->{dictionary};
             push @keep, $dict if $i{$dict}++ == 0;
@@ -183,13 +160,7 @@ sub known_morphemes {
         WHERE key = 'last_update';
     ;"))[0] || 0;
 
-    my $last_new = int(($self->anki->dbh->selectrow_array("
-        SELECT cards.firstAnswered
-        FROM cards
-        WHERE cards.type > 0
-        ORDER BY cards.firstAnswered DESC
-        LIMIT 1
-    ;"))[0]);
+    my $last_new = int($self->anki->last_new_card / 1000);
 
     return $self->fast_known_morphemes
         if $last_new <= $last_update;
@@ -213,21 +184,15 @@ sub known_morphemes {
 
     $added ||= 0; # first run
 
-    $sth = $self->anki->prepare("
-        SELECT value, cards.firstAnswered, cards.factId FROM fields
-            JOIN fieldModels ON (fieldModels.id = fields.fieldModelId)
-            JOIN cards ON (cards.factId = fields.factId)
-        WHERE
-            fieldModels.name = '日本語'
-            AND cards.type > 0
-            AND cards.firstAnswered > ?
-        ORDER BY cards.firstAnswered ASC
-    ;");
-    $sth->execute($added);
-
     my @new;
+    $self->anki->each_card(sub {
+        my ($card) = @_;
 
-    while (my ($sentence, $added, $fid) = $sth->fetchrow_array) {
+        return if $card->suspended;
+
+        my $sentence = $card->field('日本語');
+        return if !$sentence;
+
         for my $morpheme ($self->morphemes_of($sentence)) {
             my $dict = $morpheme->{dictionary};
             next if $i{$dict}++;
@@ -235,13 +200,15 @@ sub known_morphemes {
             push @keep, $dict;
             push @new, $dict;
 
+            my $added = int($card->id / 1000);
+
             $self->knowndb->do("
                 INSERT INTO morphemes
                 ('dictionary', 'added', 'source')
                 VALUES (?, ?, ?)
-            ", {}, $dict, $added, $fid);
+            ", {}, $dict, $added, $card->note_id);
         }
-    }
+    });
 
     if (@new > 10) {
         my $more = () = splice @new, 10;
