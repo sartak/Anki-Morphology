@@ -105,7 +105,7 @@ sub morphemes_of {
         my $dict = $fields[6];
 
         # not a Japanese word
-        next if $dict eq '*';
+        next if $dict eq '*' || $dict =~ /^[a-zA-Z ]*$/;
 
         push @morphemes, {
             surface    => $surface,
