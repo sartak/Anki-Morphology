@@ -4,6 +4,7 @@ use utf8::all;
 use Any::Moose;
 use Text::MeCab;
 use Encode 'decode_utf8';
+use DateTime;
 
 use Anki::Database;
 use Anki::Corpus;
@@ -151,7 +152,27 @@ sub fast_known_morphemes {
     return @keep;
 }
 
-sub known_morphemes {
+sub morphemes_by_date {
+    my $self = shift;
+
+    $self->_rescan_morphemes;
+
+    my $sth = $self->knowndb->prepare("
+        SELECT dictionary, added
+        FROM morphemes
+        ORDER BY added ASC
+    ;");
+    $sth->execute;
+
+    my %by_date;
+    while (my ($dict, $added) = $sth->fetchrow_array) {
+	my $date = DateTime->from_epoch(epoch => $added)->ymd;
+        push @{$by_date{$date}}, $dict;
+    }
+    return \%by_date;
+}
+
+sub _rescan_morphemes {
     my $self = shift;
 
     my $last_update = ($self->knowndb->selectrow_array("
@@ -161,25 +182,24 @@ sub known_morphemes {
     ;"))[0] || 0;
 
     my $last_new = int($self->anki->last_new_card / 1000);
-
-    return $self->fast_known_morphemes
-        if $last_new <= $last_update;
+    if ($last_new <= $last_update) {
+      return;
+    }
 
     warn "New cards, rescanning morphology...\n";
 
     my %i;
-    my @keep;
 
     my $sth = $self->knowndb->prepare("
-        SELECT dictionary, added
+        SELECT dictionary
         FROM morphemes
         ORDER BY added ASC
     ;");
     $sth->execute;
 
     my $added;
-    while (((my $dict), $added) = $sth->fetchrow_array) {
-        push @keep, $dict if $i{$dict}++ == 0;
+    while (my ($dict) = $sth->fetchrow_array) {
+        $i{$dict}++;
     }
 
     $added ||= 0; # first run
@@ -197,7 +217,6 @@ sub known_morphemes {
             my $dict = $morpheme->{dictionary};
             next if $i{$dict}++;
 
-            push @keep, $dict;
             push @new, $dict;
 
             my $added = int($card->id / 1000);
@@ -228,7 +247,15 @@ sub known_morphemes {
     ;");
     $self->knowndb->commit;
 
-    return @keep;
+    return;
+}
+
+sub known_morphemes {
+    my $self = shift;
+
+    $self->_rescan_morphemes;
+
+    return $self->fast_known_morphemes;
 }
 
 sub morpheme_frequency {
