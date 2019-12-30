@@ -40,7 +40,7 @@ has knowndb => (
 has mecab => (
     is      => 'ro',
     isa     => 'Text::MeCab',
-    default => sub { Text::MeCab->new(-r $ENV{MECAB_USERDIC} ? (userdic => $ENV{MECAB_USERDIC}) : ()) },
+    default => sub { Text::MeCab->new($ENV{MECAB_USERDIC} && -r $ENV{MECAB_USERDIC} ? (userdic => $ENV{MECAB_USERDIC}) : ()) },
     lazy    => 1,
 );
 
