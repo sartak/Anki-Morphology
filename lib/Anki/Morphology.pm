@@ -624,7 +624,7 @@ sub canto_match_sentence_reading {
                     if (@matches == @word_reading) {
                         push @correct_words, $word;
                         push @correct_morphemes, $morpheme;
-                        push @correct_readings, @word_reading;
+                        push @correct_readings, join ' ', @word_reading;
                         splice @sentence_readings_left, 0, scalar(@word_reading);
                         next WORD;
                     }
