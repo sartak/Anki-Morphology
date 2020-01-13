@@ -65,6 +65,25 @@ has canto_kanji_readings => (
     lazy => 1,
 );
 
+sub readings_for_word {
+  my $self = shift;
+  my $word = shift;
+
+  if (!$self->readings->{$word}) {
+      my $yomi = [ $self->anki->field_values("読み", "文") ];
+      for my $readings (@$yomi) {
+          my ($reading) = $readings =~ /(?:>|\n|^)\Q$word\E【(.*?)】/;
+          if ($reading) {
+              $self->readings->{$word} = $reading;
+              last;
+          }
+      }
+  }
+
+  return $self->readings->{$word} if $self->readings->{$word};
+  return;
+}
+
 sub readings_for {
     my $self     = shift;
     my $sentence = shift;
