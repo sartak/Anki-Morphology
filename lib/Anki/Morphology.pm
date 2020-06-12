@@ -343,6 +343,7 @@ sub manual_japanese_vocabulary {
     while (<$handle>) {
       chomp;
       my @fields = split "\t", $_;
+      next if $. == 1;
       next if $. == 2 && (@fields == 0 || @fields == 1);
       if (@fields == 2 && $fields[1] !~ /\p{Han}/) {
           push @fields, $fields[1];
