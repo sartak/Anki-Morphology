@@ -541,6 +541,38 @@ sub canto_morphemes_of {
     return grep { $seen{join "\0", map { $_->{word} } @$_}++ == 0} @parses;
 }
 
+sub best_canto_reading_for_sentence {
+    my $self = shift;
+    my $line = shift;
+
+    my @morphemes = @{ $self->canto_morphemes_of($line, { best => 1, allow_unknown => 1, include_alphanumeric => 1 }) };
+    my @results;
+
+    for my $morpheme (@morphemes) {
+        my $word = $morpheme->{word};
+        my @readings = $self->canto_readings_for($word);
+
+        if (@readings == 0) {
+            for my $character (split '', $word) {
+                my @character_readings = $self->canto_kanji_readings_for($character);
+                if (@character_readings == 0) {
+                    push @results, $character . "??";
+                } elsif (@character_readings > 1) {
+                    push @results, $character_readings[0] . "?";
+                } else {
+                    push @results, $character_readings[0];
+                }
+            }
+        } elsif (@readings > 1) {
+            push @results, $readings[0] . "?";
+        } else {
+            push @results, $readings[0];
+        }
+    }
+
+    return join ' ', @results;
+}
+
 sub canto_readings_for {
     my $self = shift;
     my $word = shift;
