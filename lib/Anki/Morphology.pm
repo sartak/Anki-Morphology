@@ -330,6 +330,25 @@ sub common_words_for {
     return \%words;
 }
 
+sub manual_japanese_vocabulary {
+    my $self = shift;
+
+    my @vocabulary;
+    open my $handle, '<', "/home/shawn/Dropbox/Documents/metrics/japanese/vocabulary.tsv" or die $!;
+    while (<$handle>) {
+      chomp;
+      my @fields = split "\t", $_;
+      next if $. == 2 && (@fields == 0 || @fields == 1);
+      if (@fields == 2 && $fields[1] !~ /\p{Han}/) {
+          push @fields, $fields[1];
+      }
+      die "$. expected 3 fields, got " . int(@fields) . ": " . $_ if @fields != 3;
+      push @vocabulary, \@fields;
+    }
+
+    return @vocabulary;
+}
+
 sub _build_canto_readings {
     my $self = shift;
 
