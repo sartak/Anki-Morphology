@@ -5,6 +5,8 @@ use utf8::all;
 use Anki::Morphology;
 use Lingua::JA::Moji 'kana2katakana';
 
+delete $ENV{MECAB_USERDIC};
+
 my $morph = Anki::Morphology->new;
 my @vocabulary = $morph->manual_japanese_vocabulary;
 

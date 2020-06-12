@@ -92,6 +92,7 @@ sub readings_for {
     my @readings;
     my %seen;
     my $yomi;
+    my %added;
 
     NODE: for (my $node = $self->mecab->parse($sentence); $node; $node = $node->next) {
         my @fields = split ',', decode_utf8 $node->feature;
@@ -115,12 +116,16 @@ sub readings_for {
 
             if ($self->readings->{$word}) {
                 push @readings, [$word, $self->readings->{$word}];
-                next NODE;
+		$added{$dict} = 1;
+		$added{$surface} = 1;
+		next NODE;
             }
         }
 
-	if ($include_unknown) {
+	if ($include_unknown && !$added{$dict} && !$added{$surface}) {
           push @readings, [$dict, ($fields[7] || $fields[8]) . "?"];
+	  $added{$dict} = 1;
+	  $added{$surface} = 1;
 	}
     }
 
