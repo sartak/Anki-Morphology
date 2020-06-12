@@ -1,0 +1,20 @@
+#!/usr/bin/env perl
+use 5.14.0;
+use warnings;
+use utf8::all;
+use Anki::Morphology;
+use Lingua::JA::Moji 'kana2katakana';
+
+my $morph = Anki::Morphology->new;
+my @vocabulary = $morph->manual_japanese_vocabulary;
+
+for ($morph->manual_japanese_vocabulary) {
+    my ($date, $word, $furigana) = @$_;
+    next if $word =~ /〜/ || $furigana =~ /〜/;
+
+    my @morphemes = $morph->morphemes_of($word);
+    next if @morphemes == 1 && $morphemes[0]->{dictionary} eq $word;
+
+    my $katakana = kana2katakana($furigana);
+    say "$word,-1,-1,1,名詞,一般,*,*,*,*,$word,$katakana,$katakana,$furigana";
+}
