@@ -356,7 +356,7 @@ sub _build_canto_kanji_readings {
       my ($note) = @_;
       return if $note->has_tag('duplicate-kanji');
 
-      my $cantonese = NFC($note->field('粵語') or return);
+      my $cantonese = NFC($note->field('廣東話') or return);
       my $kanji = NFC($note->field('漢字'));
 
       my @readings = split ', ', $cantonese;
