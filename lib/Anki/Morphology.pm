@@ -85,8 +85,9 @@ sub readings_for_word {
 }
 
 sub readings_for {
-    my $self     = shift;
-    my $sentence = shift;
+    my $self            = shift;
+    my $sentence        = shift;
+    my $include_unknown = shift;
 
     my @readings;
     my %seen;
@@ -107,16 +108,20 @@ sub readings_for {
                     my ($reading) = $readings =~ /(?:>|\n|^)\Q$word\E【(.*?)】/;
                     if ($reading) {
                         $self->readings->{$word} = $reading;
-                        last;
+                        next;
                     }
                 }
             }
 
             if ($self->readings->{$word}) {
                 push @readings, [$word, $self->readings->{$word}];
-                last;
+                next NODE;
             }
         }
+
+	if ($include_unknown) {
+          push @readings, [$dict, ($fields[7] || $fields[8]) . "?"];
+	}
     }
 
     return @readings if wantarray;

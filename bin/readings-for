@@ -4,10 +4,8 @@ use warnings;
 use utf8::all;
 use Anki::Morphology;
 
-my $sentence = shift
-    or die "usage: $0 'sentence'\n";
+@ARGV == 1 || @ARGV == 2 or die "usage: $0 'sentence' [include_unknown]\n";
 
 my $morph = Anki::Morphology->new;
 
-say scalar $morph->readings_for($sentence);
-
+say scalar $morph->readings_for(@ARGV);
