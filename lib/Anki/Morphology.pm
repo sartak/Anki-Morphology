@@ -580,6 +580,12 @@ sub best_canto_reading_for_sentence {
 
     for my $morpheme (@morphemes) {
         my $word = $morpheme->{word};
+
+        if ($word =~ /^\d+$/) {
+            push @results, $word;
+            next;
+        }
+
         my @readings = $self->canto_readings_for($word);
 
         if (@readings == 0) {
