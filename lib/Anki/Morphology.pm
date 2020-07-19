@@ -581,7 +581,7 @@ sub best_canto_reading_for_sentence {
     for my $morpheme (@morphemes) {
         my $word = $morpheme->{word};
 
-        if ($word =~ /^\d+$/) {
+        if ($word =~ /^[a-zA-Z0-9]+$/) {
             push @results, $word;
             next;
         }
