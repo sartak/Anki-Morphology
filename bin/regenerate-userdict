@@ -1,0 +1,18 @@
+#!/usr/bin/env perl
+use 5.14.0;
+use autodie ':all';
+use strict;
+use warnings;
+
+my $csv = "/tmp/dict.csv";
+my $dic = $ENV{MECAB_USERDIC} or die "MECAB_USERDIC required\n";
+
+system("cp $dic $dic.bak");
+
+system("extract-number-words > $csv");
+
+system("mecab-additions >> $csv");
+
+system("/usr/lib/mecab/mecab-dict-index -d /usr/share/mecab/dic/ipadic -u $dic -f utf8 -t utf8 $csv");
+
+# system("flush-morpheme-caches");
