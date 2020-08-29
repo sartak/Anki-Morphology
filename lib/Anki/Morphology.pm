@@ -490,7 +490,8 @@ sub canto_morphemes_of {
         }
 
         # 你鍾唔鍾意呢個呀
-        if (@candidate >= 3 && $candidate[0] eq $candidate[2] && $candidate[1] eq '唔') {
+        # 你知不知道？
+        if (@candidate >= 3 && $candidate[0] eq $candidate[2] && $candidate[1] =~ /^(?:唔|不)$/) {
           my $dupe = shift @candidate;
           my $mod = shift @candidate;
           $queue[$i] = [
