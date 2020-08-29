@@ -603,13 +603,15 @@ sub best_canto_reading_for_sentence {
         my @readings = $self->canto_readings_for($word);
 
         if (@readings == 0) {
-	    $vocab_only = 0;
+	    $vocab_only = 0 if $morpheme->{type} eq 'primary' || $morpheme->{type} eq 'unknown';
             for my $character (split '', $word) {
                 my @character_readings = $self->canto_kanji_readings_for($character);
                 if (@character_readings == 0) {
                     push @results, $character . "??";
+	            $vocab_only = 0;
                 } elsif (@character_readings > 1) {
                     push @results, $character_readings[0] . "?";
+	            $vocab_only = 0;
                 } else {
                     push @results, $character_readings[0];
                 }
