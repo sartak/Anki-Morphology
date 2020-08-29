@@ -489,6 +489,18 @@ sub canto_morphemes_of {
           ];
         }
 
+	# 庫啵啵！！
+	# TODO: find more examples to generalize
+	if ((join "", @candidate) eq '庫啵啵') {
+          if (@rest) {
+            push @parses, [@preparse, {word => "庫啵", type => "primary"}, {word => "啵", type => "duplicate"},, @$_] for $recurse->(@rest);
+          }
+          else {
+            push @parses, [@preparse, {word => "庫啵", type => "primary"}, {word => "啵", type => "duplicate"},];
+          }
+	  next;
+	}
+
         # 你鍾唔鍾意呢個呀
         # 你知不知道？
         if (@candidate >= 3 && $candidate[0] eq $candidate[2] && $candidate[1] =~ /^(?:唔|不)$/) {
