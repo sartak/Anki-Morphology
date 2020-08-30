@@ -1,0 +1,18 @@
+#!/usr/bin/env perl
+use utf8::all;
+use strict;
+use warnings;
+use Anki::Morphology;
+
+my $morph = Anki::Morphology->new;
+
+my %count;
+while (<>) {
+  $count{$_}++ for /(\p{Han})/g;
+}
+
+for my $character (sort { $count{$b} <=> $count{$a} } keys %count) {
+  my @readings = $morph->canto_kanji_readings_for($character);
+  my $readings = @readings ? join '、', @readings : "??";
+  print "$character $count{$character} $readings\n";
+}
