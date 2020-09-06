@@ -6,6 +6,7 @@ use Text::MeCab;
 use Encode 'decode_utf8';
 use Unicode::Normalize;
 use DateTime;
+use JSON ();
 
 use Anki::Database;
 use Anki::Corpus;
@@ -601,6 +602,7 @@ sub summarize_canto_morphemes {
     for my $morpheme (@$morphemes) {
         my $word = $morpheme->{word};
 	my $word_reading;
+	my $word_vocab = 1;
 
         if ($word =~ /^[a-zA-Z0-9]+$/) {
             $word_reading = $word;
@@ -608,17 +610,17 @@ sub summarize_canto_morphemes {
           my @readings = $self->canto_readings_for($word);
 
           if (@readings == 0) {
-	      $vocab_only = 0 if $morpheme->{type} eq 'primary' || $morpheme->{type} eq 'unknown';
+	      $word_vocab = 0 if $morpheme->{type} eq 'primary' || $morpheme->{type} eq 'unknown';
 	      my @word_readings;
               for my $character (split '', $word) {
                   my @character_readings = $self->canto_kanji_readings_for($character);
 	  	my $character_reading;
                   if (@character_readings == 0) {
                       $character_reading = $character . "??";
-	              $vocab_only = 0;
+	              $word_vocab = 0;
                   } elsif (@character_readings > 1) {
                       $character_reading = $character_readings[0] . "?";
-	              $vocab_only = 0;
+	              $word_vocab = 0;
                   } else {
                       $character_reading = $character_readings[0];
                   }
@@ -626,15 +628,16 @@ sub summarize_canto_morphemes {
               }
 	      $word_reading = join " ", @word_readings;
           } elsif (@readings > 1) {
-	      $vocab_only = 0;
               $word_reading = $readings[0] . "?";
           } else {
               $word_reading = $readings[0];
           }
         }
 
+	$vocab_only = 0 if !$word_vocab;
 	push @results, $word_reading;
         $morpheme->{reading} = $word_reading;
+	$morpheme->{known} = $word_vocab ? JSON::true : JSON::false;
     }
 
     my $result = join ' ', @results;
