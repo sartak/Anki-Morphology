@@ -588,40 +588,53 @@ sub best_canto_reading_for_sentence {
     my $self = shift;
     my $line = shift;
 
-    my @morphemes = @{ $self->canto_morphemes_of($line, { best => 1, allow_unknown => 1, include_alphanumeric => 1 }) };
+    my $morphemes = $self->canto_morphemes_of($line, { best => 1, allow_unknown => 1, include_alphanumeric => 1 });
+    return $self->summarize_canto_morphemes($morphemes);
+}
+
+sub summarize_canto_morphemes {
+    my $self = shift;
+    my $morphemes = shift;
     my @results;
     my $vocab_only = 1;
 
-    for my $morpheme (@morphemes) {
+    for my $morpheme (@$morphemes) {
         my $word = $morpheme->{word};
+	my $word_reading;
 
         if ($word =~ /^[a-zA-Z0-9]+$/) {
-            push @results, $word;
-            next;
-        }
-
-        my @readings = $self->canto_readings_for($word);
-
-        if (@readings == 0) {
-	    $vocab_only = 0 if $morpheme->{type} eq 'primary' || $morpheme->{type} eq 'unknown';
-            for my $character (split '', $word) {
-                my @character_readings = $self->canto_kanji_readings_for($character);
-                if (@character_readings == 0) {
-                    push @results, $character . "??";
-	            $vocab_only = 0;
-                } elsif (@character_readings > 1) {
-                    push @results, $character_readings[0] . "?";
-	            $vocab_only = 0;
-                } else {
-                    push @results, $character_readings[0];
-                }
-            }
-        } elsif (@readings > 1) {
-	    $vocab_only = 0;
-            push @results, $readings[0] . "?";
+            $word_reading = $word;
         } else {
-            push @results, $readings[0];
+          my @readings = $self->canto_readings_for($word);
+
+          if (@readings == 0) {
+	      $vocab_only = 0 if $morpheme->{type} eq 'primary' || $morpheme->{type} eq 'unknown';
+	      my @word_readings;
+              for my $character (split '', $word) {
+                  my @character_readings = $self->canto_kanji_readings_for($character);
+	  	my $character_reading;
+                  if (@character_readings == 0) {
+                      $character_reading = $character . "??";
+	              $vocab_only = 0;
+                  } elsif (@character_readings > 1) {
+                      $character_reading = $character_readings[0] . "?";
+	              $vocab_only = 0;
+                  } else {
+                      $character_reading = $character_readings[0];
+                  }
+	  	push @word_readings, $character_reading;
+              }
+	      $word_reading = join " ", @word_readings;
+          } elsif (@readings > 1) {
+	      $vocab_only = 0;
+              $word_reading = $readings[0] . "?";
+          } else {
+              $word_reading = $readings[0];
+          }
         }
+
+	push @results, $word_reading;
+        $morpheme->{reading} = $word_reading;
     }
 
     my $result = join ' ', @results;
