@@ -71,6 +71,15 @@ sub readings_for_word {
   my $word = shift;
 
   if (!$self->readings->{$word}) {
+      for ($self->manual_japanese_vocabulary) {
+        if ($word eq $_->[1]) {
+          $self->readings->{$word} = $_->[2];
+	  last;
+	}
+      }
+  }
+
+  if (!$self->readings->{$word}) {
       my $yomi = [ $self->anki->field_values("読み", "文") ];
       for my $readings (@$yomi) {
           my ($reading) = $readings =~ /(?:>|\n|^)\Q$word\E【(.*?)】/;
@@ -94,6 +103,7 @@ sub readings_for {
     my %seen;
     my $yomi;
     my %added;
+    my $manual_readings;
 
     NODE: for (my $node = $self->mecab->parse($sentence); $node; $node = $node->next) {
         my @fields = split ',', decode_utf8 $node->feature;
@@ -104,13 +114,23 @@ sub readings_for {
         for my $word ($dict, $surface) {
             next if $seen{$word}++;
 
+	    if (!$self->readings->{$word}) {
+	      $manual_readings //= [$self->manual_japanese_vocabulary];
+              for (@$manual_readings) {
+                if ($word eq $_->[1]) {
+                  $self->readings->{$word} = $_->[2];
+                  last;
+                }
+              }
+	    }
+
             if (!$self->readings->{$word}) {
                 $yomi //= [ $self->anki->field_values("読み", "文") ];
                 for my $readings (@$yomi) {
                     my ($reading) = $readings =~ /(?:>|\n|^)\Q$word\E【(.*?)】/;
                     if ($reading) {
                         $self->readings->{$word} = $reading;
-                        next;
+                        last;
                     }
                 }
             }
