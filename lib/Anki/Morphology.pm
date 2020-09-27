@@ -144,9 +144,11 @@ sub readings_for {
         }
 
 	if ($include_unknown && !$added{$dict} && !$added{$surface}) {
-          push @readings, [$dict, ($fields[7] || $fields[8]) . "?"];
-	  $added{$dict} = 1;
-	  $added{$surface} = 1;
+          my $left = ($dict || '*') eq '*' ? $surface : $dict;
+          my $right = ($fields[7] || $fields[8] || "") . "?";
+          push @readings, [$left, $right];
+          $added{$dict} = 1;
+          $added{$surface} = 1;
 	}
     }
 
