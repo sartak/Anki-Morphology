@@ -49,7 +49,8 @@ has mecab => (
 has readings => (
     is      => 'ro',
     isa     => 'HashRef[Str]',
-    default => sub { {} },
+    builder => '_build_readings',
+    lazy    => 1,
 );
 
 has canto_readings => (
@@ -66,31 +67,29 @@ has canto_kanji_readings => (
     lazy => 1,
 );
 
+sub _build_readings {
+    my $self = shift;
+    my $readings = shift;
+
+    for my $yomi ($self->anki->field_values("読み", "文")) {
+        while ($yomi =~ /([^【】\s<>]+)【([^【】\s<>]+)】/g) {
+	    $readings->{$1} = $2;
+	}
+    }
+
+    for ($self->manual_japanese_vocabulary) {
+      $readings->{$_->[1]} = $_->[2];
+    }
+
+    return $readings;
+}
+
 sub readings_for_word {
   my $self = shift;
   my $word = shift;
 
-  if (!$self->readings->{$word}) {
-      for ($self->manual_japanese_vocabulary) {
-        if ($word eq $_->[1]) {
-          $self->readings->{$word} = $_->[2];
-	  last;
-	}
-      }
-  }
-
-  if (!$self->readings->{$word}) {
-      my $yomi = [ $self->anki->field_values("読み", "文") ];
-      for my $readings (@$yomi) {
-          my ($reading) = $readings =~ /(?:>|\n|^)\Q$word\E【(.*?)】/;
-          if ($reading) {
-              $self->readings->{$word} = $reading;
-              last;
-          }
-      }
-  }
-
-  return $self->readings->{$word} if $self->readings->{$word};
+  my $readings = $self->readings;
+  return $readings->{$word} if $readings->{$word};
   return;
 }
 
@@ -114,29 +113,8 @@ sub readings_for {
         for my $word ($dict, $surface) {
             next if $seen{$word}++;
 
-	    if (!$self->readings->{$word}) {
-	      $manual_readings //= [$self->manual_japanese_vocabulary];
-              for (@$manual_readings) {
-                if ($word eq $_->[1]) {
-                  $self->readings->{$word} = $_->[2];
-                  last;
-                }
-              }
-	    }
-
-            if (!$self->readings->{$word}) {
-                $yomi //= [ $self->anki->field_values("読み", "文") ];
-                for my $readings (@$yomi) {
-                    my ($reading) = $readings =~ /(?:>|\n|^)\Q$word\E【(.*?)】/;
-                    if ($reading) {
-                        $self->readings->{$word} = $reading;
-                        last;
-                    }
-                }
-            }
-
-            if ($self->readings->{$word}) {
-                push @readings, [$word, $self->readings->{$word}];
+            if (my $reading = $self->readings->{$word}) {
+                push @readings, [$word, $reading];
 		$added{$dict} = 1;
 		$added{$surface} = 1;
 		next NODE;
