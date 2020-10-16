@@ -1,0 +1,13 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use utf8::all;
+use Anki::Morphology;
+
+my $morph = Anki::Morphology->new;
+
+LINE: while (<>) {
+  my $morphemes = $morph->canto_morphemes_of($_, { best => 1, allow_unknown => 1, include_alphanumeric => 1 });
+  print join " ", map { $_->{word} } @$morphemes;
+  print "\n";
+}
