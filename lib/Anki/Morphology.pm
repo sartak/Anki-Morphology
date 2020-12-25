@@ -341,14 +341,15 @@ sub common_words_for {
     return \%words;
 }
 
-sub _intake_japanese_vocabulary {
+sub _intake_vocabulary {
     my $self = shift;
+    my $table = shift eq 'ja' ? 'japaneseVocabulary' : 'cantoneseVocabulary';
     my $dbh = DBI->connect("dbi:SQLite:dbname=/var/opt/intake.sqlite");
     $dbh->{sqlite_unicode} = 1;
 
     my $sth = $dbh->prepare("
       SELECT DATE(time, 'unixepoch'), word, reading
-      FROM japaneseVocabulary
+      FROM $table
       WHERE (_deleted IS NULL or _deleted=0)
       ORDER BY time ASC
     ");
@@ -387,8 +388,34 @@ sub manual_japanese_vocabulary {
     my $self = shift;
 
     return (
-        (reverse $self->_intake_japanese_vocabulary),
+        (reverse $self->_intake_vocabulary('ja')),
         ($self->_spreadsheet_japanese_vocabulary),
+    );
+}
+
+sub _spreadsheet_canto_vocabulary {
+    my $self = shift;
+
+    my @vocabulary;
+
+    open my $handle, '<', "$ENV{HOME}/Dropbox/Documents/metrics/cantonese/vocabulary.tsv" or die $!;
+    while (<$handle>) {
+      chomp;
+      my @fields = split "\t", $_;
+      next if $. == 2 && (@fields == 0 || @fields == 1);
+      die "expected 3 fields, got " . int(@fields) . ": " . $_ if @fields != 3;
+      push @vocabulary, \@fields;
+    }
+
+    return @vocabulary;
+}
+
+sub manual_canto_vocabulary {
+    my $self = shift;
+
+    return (
+        (reverse $self->_intake_vocabulary('can')),
+        $self->_spreadsheet_canto_vocabulary,
     );
 }
 
@@ -396,14 +423,10 @@ sub _build_canto_readings {
     my $self = shift;
 
     my %readings_for;
-    open my $handle, '<', "$ENV{HOME}/Dropbox/Documents/metrics/cantonese/vocabulary.tsv" or die $!;
-    while (<$handle>) {
-      chomp;
-      my @fields = split "\t", $_;
-      next if $. == 2 && (@fields == 0 || @fields == 1);
-      die "expected 3 fields, got " . int(@fields) . ": " . $_ if @fields != 3;
-      my ($date, $word, $reading) = @fields;
-      push @{ $readings_for{$word} }, $reading;
+
+    for ($self->manual_canto_vocabulary) {
+        my ($date, $word, $reading) = @$_;
+        push @{ $readings_for{$word} }, $reading;
     }
 
     return \%readings_for;
