@@ -400,6 +400,7 @@ sub _spreadsheet_canto_vocabulary {
 
     open my $handle, '<', "$ENV{HOME}/Dropbox/Documents/metrics/cantonese/vocabulary.tsv" or die $!;
     while (<$handle>) {
+      next if $. == 1;
       chomp;
       my @fields = split "\t", $_;
       next if $. == 2 && (@fields == 0 || @fields == 1);
