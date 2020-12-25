@@ -341,7 +341,29 @@ sub common_words_for {
     return \%words;
 }
 
-sub manual_japanese_vocabulary {
+sub _intake_japanese_vocabulary {
+    my $self = shift;
+    my $dbh = DBI->connect("dbi:SQLite:dbname=/var/opt/intake.sqlite");
+    $dbh->{sqlite_unicode} = 1;
+
+    my $sth = $dbh->prepare("
+      SELECT DATE(time, 'unixepoch'), word, reading
+      FROM japaneseVocabulary
+      WHERE (_deleted IS NULL or _deleted=0)
+      ORDER BY time ASC
+    ");
+    $sth->execute;
+
+    my @vocabulary;
+
+    while (my ($time, $word, $reading) = $sth->fetchrow_array) {
+      push @vocabulary, [$time, $word, $reading];
+    }
+
+    return @vocabulary;
+}
+
+sub _spreadsheet_japanese_vocabulary {
     my $self = shift;
 
     my @vocabulary;
@@ -359,6 +381,15 @@ sub manual_japanese_vocabulary {
     }
 
     return @vocabulary;
+}
+
+sub manual_japanese_vocabulary {
+    my $self = shift;
+
+    return (
+        (reverse $self->_intake_japanese_vocabulary),
+        ($self->_spreadsheet_japanese_vocabulary),
+    );
 }
 
 sub _build_canto_readings {
