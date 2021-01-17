@@ -348,7 +348,7 @@ sub _intake_vocabulary {
     $dbh->{sqlite_unicode} = 1;
 
     my $sth = $dbh->prepare("
-      SELECT DATE(time, 'unixepoch'), word, reading
+      SELECT DATE(time, 'unixepoch'), word, reading, time
       FROM $table
       WHERE (_deleted IS NULL or _deleted=0)
       ORDER BY time ASC
@@ -357,8 +357,8 @@ sub _intake_vocabulary {
 
     my @vocabulary;
 
-    while (my ($time, $word, $reading) = $sth->fetchrow_array) {
-      push @vocabulary, [$time, $word, $reading];
+    while (my ($date, $word, $reading, $time) = $sth->fetchrow_array) {
+      push @vocabulary, [$date, $word, $reading, $time];
     }
 
     return @vocabulary;
