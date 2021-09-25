@@ -7,7 +7,9 @@ use warnings;
 my $csv = "/tmp/dict.csv";
 my $dic = $ENV{MECAB_USERDIC} or die "MECAB_USERDIC required\n";
 
-system("cp $dic $dic.bak");
+if (-e $dic) {
+  system("cp $dic $dic.bak");
+}
 
 system("extract-number-words > $csv");
 
