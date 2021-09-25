@@ -46,6 +46,12 @@ has mecab => (
     lazy    => 1,
 );
 
+has intake => (
+  is      => 'ro',
+  isa     => 'Str',
+  default => sub { $ENV{INTAKE_DATABASE} || "/var/opt/intake.sqlite" },
+);
+
 has readings => (
     is      => 'ro',
     isa     => 'HashRef[Str]',
@@ -344,7 +350,7 @@ sub common_words_for {
 sub _intake_vocabulary {
     my $self = shift;
     my $table = shift eq 'ja' ? 'japaneseVocabulary' : 'cantoneseVocabulary';
-    my $dbh = DBI->connect("dbi:SQLite:dbname=/var/opt/intake.sqlite");
+    my $dbh = DBI->connect("dbi:SQLite:dbname=" . $self->intake);
     $dbh->{sqlite_unicode} = 1;
 
     my $sth = $dbh->prepare("
