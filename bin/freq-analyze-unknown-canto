@@ -8,7 +8,7 @@ my $morph = Anki::Morphology->new;
 
 my %count;
 while (<>) {
-  $count{$_}++ for /(\p{Han})/g;
+  $count{$_}++ for /(\p{Unified_Ideograph})/g;
 }
 
 for my $character (sort { $count{$b} <=> $count{$a} } keys %count) {

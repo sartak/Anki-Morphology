@@ -114,7 +114,7 @@ sub readings_for {
         my @fields = split ',', decode_utf8 $node->feature;
         my $surface = decode_utf8 $node->surface;
         my $dict = $fields[6];
-        next unless ($dict||'') =~ /\p{Han}/ || ($surface||'') =~ /\p{Han}/;
+        next unless ($dict||'') =~ /\p{Unified_Ideograph}/ || ($surface||'') =~ /\p{Unified_Ideograph}/;
 
         for my $word ($dict, $surface) {
             next if $seen{$word}++;
@@ -438,7 +438,7 @@ sub canto_morphemes_of {
 
     confess "Unexpected options to canto_morphemes_of: " . join(', ', keys %$options) if %$options;
 
-    my $word_regex = $include_alphanumeric ? qr/\p{Han}|[a-zA-Z0-9]+/ : qr/\p{Han}/;
+    my $word_regex = $include_alphanumeric ? qr/\p{Unified_Ideograph}|[a-zA-Z0-9]+/ : qr/\p{Unified_Ideograph}/;
     my @characters = $line =~ /$word_regex/g;
     my $readings = $self->canto_readings;
 
