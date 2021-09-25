@@ -1,7 +1,7 @@
 package Anki::Morphology;
 use 5.14.0;
 use utf8::all;
-use Any::Moose;
+{ no warnings 'deprecated'; use Any::Moose; }
 use Text::MeCab;
 use Encode 'decode_utf8';
 use Unicode::Normalize;
