@@ -373,8 +373,14 @@ sub _intake_vocabulary {
 sub _spreadsheet_japanese_vocabulary {
     my $self = shift;
 
+    my $file = "/home/shawn/Dropbox/Documents/metrics/japanese/vocabulary.tsv";
+    if (!-e $file) {
+      warn "$file doesn't exist\n";
+      return;
+    }
+
     my @vocabulary;
-    open my $handle, '<', "/home/shawn/Dropbox/Documents/metrics/japanese/vocabulary.tsv" or die $!;
+    open my $handle, '<', $file or die $!;
     while (<$handle>) {
       chomp;
       my @fields = split "\t", $_;
@@ -404,7 +410,15 @@ sub _spreadsheet_canto_vocabulary {
 
     my @vocabulary;
 
-    open my $handle, '<', "$ENV{HOME}/Dropbox/Documents/metrics/cantonese/vocabulary.tsv" or die $!;
+    my $file = "$ENV{HOME}/Dropbox/Documents/metrics/cantonese/vocabulary.tsv";
+
+    if (!-e $file) {
+      warn "$file doesn't exist\n";
+      return;
+    }
+
+
+    open my $handle, '<', $file or die $!;
     while (<$handle>) {
       next if $. == 1;
       chomp;
